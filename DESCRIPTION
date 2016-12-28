@@ -1,0 +1,16 @@
+Package: FTRL
+Type: Package
+Title: FTRL proximal algorithm for large scale online lerning
+Version: 0.1.0
+Author: Dmitriy Selivanov
+Maintainer: Dmitriy Selivanov <selivanov.dmitriy@gmail.com>
+Description: R/C++ implementation for FTRL-proximal algorithm
+License: GPL >= 2
+SystemRequirements: C++11
+Encoding: UTF-8
+LazyData: true
+Imports: 
+  Rcpp (>= 0.12.8), 
+  R6 (>= 2.1.2), 
+  Matrix (>= 1.1)
+LinkingTo: Rcpp
