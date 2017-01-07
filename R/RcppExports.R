@@ -5,6 +5,10 @@ create_ftrl_model <- function(z_inp, n_inp, alpha, beta, lambda1, lambda2, n_fea
     .Call('FTRL_create_ftrl_model', PACKAGE = 'FTRL', z_inp, n_inp, alpha, beta, lambda1, lambda2, n_features)
 }
 
+get_ftrl_weights <- function(ptr) {
+    .Call('FTRL_get_ftrl_weights', PACKAGE = 'FTRL', ptr)
+}
+
 ftrl_partial_fit <- function(m, y, ptr, do_update = 1L) {
     .Call('FTRL_ftrl_partial_fit', PACKAGE = 'FTRL', m, y, ptr, do_update)
 }

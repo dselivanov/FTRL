@@ -66,6 +66,21 @@ double predict_one(const vector<int> &index, const vector<double> &x, const Rcpp
   return(res);
 }
 
+
+// [[Rcpp::export]]
+NumericVector get_ftrl_weights(SEXP ptr) {
+  Rcpp::XPtr<ftrl_model> model(ptr);
+  NumericVector res(model->n_features);
+  for (int j = 0; j < model->n_features; j++) {
+    double z_j = model->z[j];
+    if(abs(z_j) > model->lambda1) {
+      double n_j = model->n[j];
+      res[j] = (-1 / ((model->beta + sqrt(n_j)) / model->alpha  + model->lambda2)) *  (z_j - sign(z_j) * model->lambda1);
+    }
+  }
+  return (res);
+}
+
 // [[Rcpp::export]]
 List ftrl_partial_fit(S4 m, NumericVector y, SEXP ptr, int do_update = 1) {
   Rcpp::XPtr<ftrl_model> model(ptr);

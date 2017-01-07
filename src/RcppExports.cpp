@@ -22,6 +22,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// get_ftrl_weights
+NumericVector get_ftrl_weights(SEXP ptr);
+RcppExport SEXP FTRL_get_ftrl_weights(SEXP ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type ptr(ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_ftrl_weights(ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // ftrl_partial_fit
 List ftrl_partial_fit(S4 m, NumericVector y, SEXP ptr, int do_update);
 RcppExport SEXP FTRL_ftrl_partial_fit(SEXP mSEXP, SEXP ySEXP, SEXP ptrSEXP, SEXP do_updateSEXP) {

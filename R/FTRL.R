@@ -43,24 +43,6 @@ FTRL = R6::R6Class(
                                             n_features = n_features)
     },
     #-----------------------------------------------------------------
-    dump = function() {
-      model_dump = list(alpha = private$alpha, beta = private$beta,
-                        lambda1 = private$lambda1, lambda2 = private$lambda2,
-                        z = private$z, n = private$n,
-                        n_features = private$n_features)
-      class(model_dump) = "ftrl_model_dump"
-      model_dump
-    },
-    #-----------------------------------------------------------------
-    load = function(x) {
-      if(class(x) != "ftrl_model_dump")
-        stop("input should be class of 'ftrl_model_dump' -  list of model parameters")
-      self$initialize(alpha = x$alpha, beta = x$beta,
-                      lambda1 = x$lambda1, lambda2 = x$lambda2,
-                      n_features = x$n_features,
-                      z = x$z, n = x$n)
-    },
-    #-----------------------------------------------------------------
     partial_fit = function(X, y, ...) {
       stopifnot(inherits(X, "sparseMatrix"))
       if(!inherits(class(X), private$internal_matrix_format)) {
@@ -89,7 +71,30 @@ FTRL = R6::R6Class(
         stop("NA's in input matrix are not allowed")
       p = ftrl_partial_fit(m = X, y = numeric(0), ptr = private$model_ptr, do_update = FALSE)
       return(p$pred);
+    },
+    #-----------------------------------------------------------------
+    coef = function() {
+      get_ftrl_weights(private$model_ptr)
+    },
+    #-----------------------------------------------------------------
+    dump = function() {
+      model_dump = list(alpha = private$alpha, beta = private$beta,
+                        lambda1 = private$lambda1, lambda2 = private$lambda2,
+                        z = private$z, n = private$n,
+                        n_features = private$n_features)
+      class(model_dump) = "ftrl_model_dump"
+      model_dump
+    },
+    #-----------------------------------------------------------------
+    load = function(x) {
+      if(class(x) != "ftrl_model_dump")
+        stop("input should be class of 'ftrl_model_dump' -  list of model parameters")
+      self$initialize(alpha = x$alpha, beta = x$beta,
+                      lambda1 = x$lambda1, lambda2 = x$lambda2,
+                      n_features = x$n_features,
+                      z = x$z, n = x$n)
     }
+    #-----------------------------------------------------------------
   ),
   private = list(
     internal_matrix_format = "RsparseMatrix",
