@@ -11,7 +11,7 @@ R package which implements [Follow-the-Regularized-Leader](http://www.jmlr.org/p
 ## Notes
 
 - Only logistic regerssion implemented at the moment
-- Core input format for matrix is CSR - `Matrix::RsparseMatrix`. Hoewer common R `Matrix::CpasrseMatrix` ( aka `dgCMatrix`) will be converted autamatocally
+- Core input format for matrix is CSR - `Matrix::RsparseMatrix`. Hoewer common R `Matrix::CpasrseMatrix` ( aka `dgCMatrix`) will be converted automatically
 
 ## Todo list
 
