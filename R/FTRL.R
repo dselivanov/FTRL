@@ -22,7 +22,7 @@ FTRL = R6::R6Class(
     initialize = function(alpha, beta,
                           lambda1, lambda2,
                           n_features,
-                          z = NULL, n = NULL) {
+                          z = NULL, n = NULL, dropout = 0) {
       private$z = init_ftrl_param(z, n_features)
       private$n = init_ftrl_param(n, n_features)
 
@@ -40,7 +40,8 @@ FTRL = R6::R6Class(
                                             beta = beta,
                                             lambda1 = lambda1,
                                             lambda2 = lambda2,
-                                            n_features = n_features)
+                                            n_features = n_features,
+                                            dropout = dropout)
     },
     #-----------------------------------------------------------------
     partial_fit = function(X, y, ...) {

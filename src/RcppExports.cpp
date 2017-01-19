@@ -6,8 +6,8 @@
 using namespace Rcpp;
 
 // create_ftrl_model
-SEXP create_ftrl_model(NumericVector z_inp, NumericVector n_inp, double alpha, double beta, double lambda1, double lambda2, int n_features);
-RcppExport SEXP FTRL_create_ftrl_model(SEXP z_inpSEXP, SEXP n_inpSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP lambda1SEXP, SEXP lambda2SEXP, SEXP n_featuresSEXP) {
+SEXP create_ftrl_model(NumericVector z_inp, NumericVector n_inp, double alpha, double beta, double lambda1, double lambda2, int n_features, double dropout);
+RcppExport SEXP FTRL_create_ftrl_model(SEXP z_inpSEXP, SEXP n_inpSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP lambda1SEXP, SEXP lambda2SEXP, SEXP n_featuresSEXP, SEXP dropoutSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -18,7 +18,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type lambda1(lambda1SEXP);
     Rcpp::traits::input_parameter< double >::type lambda2(lambda2SEXP);
     Rcpp::traits::input_parameter< int >::type n_features(n_featuresSEXP);
-    rcpp_result_gen = Rcpp::wrap(create_ftrl_model(z_inp, n_inp, alpha, beta, lambda1, lambda2, n_features));
+    Rcpp::traits::input_parameter< double >::type dropout(dropoutSEXP);
+    rcpp_result_gen = Rcpp::wrap(create_ftrl_model(z_inp, n_inp, alpha, beta, lambda1, lambda2, n_features, dropout));
     return rcpp_result_gen;
 END_RCPP
 }

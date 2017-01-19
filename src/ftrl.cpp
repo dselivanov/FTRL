@@ -3,7 +3,6 @@
 using namespace Rcpp;
 using namespace std;
 #define N_CHECK_USER_INTERRUPT 100000
-
 inline double sigmoid(double x) {
   return(1 / (1 + exp(-x)));
 }
@@ -16,8 +15,11 @@ inline float sign(double x) {
 
 class ftrl_model {
 public:
-  ftrl_model(NumericVector z_inp, NumericVector n_inp, double alpha, double beta, double lambda1, double lambda2, int n_features):
-  alpha(alpha), beta(beta), lambda1(lambda1), lambda2(lambda2), n_features(n_features) {
+  ftrl_model(NumericVector z_inp, NumericVector n_inp, double alpha, double beta,
+             double lambda1, double lambda2, int n_features,
+             double dropout, double clip_grad = 1000):
+  alpha(alpha), beta(beta), lambda1(lambda1), lambda2(lambda2), n_features(n_features),
+  dropout(dropout), clip_grad(clip_grad) {
     z = as< vector<double> > (z_inp);
     n = as< vector<double> > (n_inp);
   }
@@ -28,11 +30,14 @@ public:
   double lambda1;
   double lambda2;
   int n_features;
+  double dropout;
+  double clip_grad;
 };
 
 // [[Rcpp::export]]
-SEXP create_ftrl_model(NumericVector z_inp, NumericVector n_inp, double alpha, double beta, double lambda1, double lambda2, int n_features) {
-  ftrl_model* model = new ftrl_model( z_inp,  n_inp,  alpha,  beta,  lambda1,  lambda2,  n_features);
+SEXP create_ftrl_model(NumericVector z_inp, NumericVector n_inp, double alpha, double beta,
+                       double lambda1, double lambda2, int n_features, double dropout) {
+  ftrl_model* model = new ftrl_model( z_inp,  n_inp,  alpha,  beta,  lambda1,  lambda2,  n_features, dropout);
   // Rprintf("alpha = %f, beta = %f, lambda1=%f, lambda2=%f, n_features=%d\n",
   //         model->alpha, model->beta, model->lambda1, model->lambda2,  model->n_features);
   XPtr< ftrl_model> ptr(model, true);
@@ -101,13 +106,25 @@ List ftrl_partial_fit(S4 m, NumericVector y, SEXP ptr, int do_update = 1) {
     size_t p1 = P[i];
     size_t p2 = P[i + 1];
     int len = p2 - p1;
-    vector<int> example_index(len);
-    vector<double> example_value(len);
-    int k = 0;
+    vector<int> example_index;
+    example_index.reserve(len);
+    vector<double> example_value;
+    example_value.reserve(len);
+    // int k = 0;
     for(int pp = p1; pp < p2; pp++) {
-      example_index[k] = J[pp];
-      example_value[k] = X[pp];
-      k++;
+      if(do_update) {
+        if(((double) rand() / (RAND_MAX)) > model->dropout) {
+          example_index.push_back(J[pp]);
+          example_value.push_back(X[pp] / (1.0 - model->dropout));
+        }
+      } else {
+        example_index.push_back(J[pp]);
+        example_value.push_back(X[pp]);
+      }
+
+      // example_index[k] = J[pp];
+      // example_value[k] = X[pp];
+      // k++;
     }
     y_hat[i] = predict_one(example_index, example_value, model);
 
@@ -121,6 +138,12 @@ List ftrl_partial_fit(S4 m, NumericVector y, SEXP ptr, int do_update = 1) {
       int k = 0;
       for(auto ii:example_index) {
         grad = d * example_value[k];
+
+        if(grad > model->clip_grad)
+          grad = model->clip_grad;
+        if(grad < - model->clip_grad)
+          grad = - model->clip_grad;
+
         n_i_g2 = model->n[ii] + grad * grad;
         sigma = (sqrt(n_i_g2) - sqrt(model->n[ii])) / model->alpha;
         model->z[ii] += grad - sigma * ww[k];
