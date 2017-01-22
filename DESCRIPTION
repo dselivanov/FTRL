@@ -14,6 +14,7 @@ LazyData: true
 Imports:
     Rcpp (>= 0.12.8),
     R6 (>= 2.1.2),
-    Matrix (>= 1.1)
+    Matrix (>= 1.1), 
+    data.table (>= 1.10.0)
 LinkingTo: Rcpp
 RoxygenNote: 5.0.1

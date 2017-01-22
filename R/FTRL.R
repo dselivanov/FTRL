@@ -5,14 +5,6 @@
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @useDynLib FTRL
 
-init_ftrl_param = function(x, n_features) {
-  init = numeric(n_features)
-  if(!is.null(x)) {
-    stopifnot(length(x) != n_features || is.numeric(x))
-    init = x
-  }
-  init
-}
 #' @name FTRL
 #' @title Creates FTRL proximal model.
 #' @description Creates 'Follow the Regularized Leader' model. Only logistic regression implemented at the moment.
@@ -20,18 +12,18 @@ init_ftrl_param = function(x, n_features) {
 #' For usage details see \bold{Methods, Arguments and Examples} sections.
 #' \preformatted{
 #' ftrl = FTRL$new(alpha = 0.1, beta = 0.5, lambda = 0, l1_ratio = 1, dropout = 0)
-#' ftrl$partial_fit(X, y)
-#' ftrl$predict(X)
+#' ftrl$partial_fit(X, y, nthread  = 0, ...)
+#' ftrl$predict(X, nthread  = 0, ...)
 #' ftrl$coef()
 #' }
 #' @format \code{\link{R6Class}} object.
 #' @section Methods:
 #' \describe{
-#'   \item{\code{$new(alpha = 0.1, beta = 0.5, lambda = 0, l1_ratio = 1, dropout = 0)}}{Constructor
+#'   \item{\code{FTRL$new(alpha = 0.1, beta = 0.5, lambda = 0, l1_ratio = 1, dropout = 0)}}{Constructor
 #'   for FTRL model. For description of arguments see \bold{Arguments} section.}
-#'   \item{\code{$partial_fit(X, y, ...)}}{fits/updates model given input matrix \code{X} and target vector \code{y}.
+#'   \item{\code{$partial_fit(X, y, nthread  = 0, ...)}}{fits/updates model given input matrix \code{X} and target vector \code{y}.
 #'   \code{X} shape = (n_samples, n_features)}
-#'   \item{\code{$predict(X, ...)}}{predicts output \code{X}}
+#'   \item{\code{$predict(X, nthread  = 0, ...)}}{predicts output \code{X}}
 #'   \item{\code{$coef()}}{ return coefficients of the regression model}
 #'   \item{\code{$dump()}}{create dump of the model (actually \code{list} with current model parameters)}
 #'   \item{\code{$load(x)}}{load/initialize model from dump)}
@@ -53,8 +45,8 @@ init_ftrl_param = function(x, n_features) {
 #' }
 #' @export
 #' @examples
-#' library(Matrix)
 #' library(FTRL)
+#' library(Matrix)
 #' i = sample(1000, 1000 * 100, TRUE)
 #' j = sample(1000, 1000 * 100, TRUE)
 #' y = sample(c(0, 1), 1000, TRUE)
@@ -63,8 +55,10 @@ init_ftrl_param = function(x, n_features) {
 #' x[i %in% which(y == 1) & j %in% odd] = 1
 #' m = sparseMatrix(i = i, j = j, x = x, dims = c(1000, 1000), giveCsparse = FALSE)
 #' X = as(m, "RsparseMatrix")
-#' ftrl = FTRL$new(alpha = 0.01, beta = 0.1, lambda = 10, l1_ratio = 1, dropout = 0, n_features = ncol(m))
+#'
+#' ftrl = FTRL$new(alpha = 0.01, beta = 0.1, lambda = 10, l1_ratio = 1, dropout = 0)
 #' ftrl$partial_fit(X, y, nthread = 8)
+#'
 #' w = ftrl$coef()
 #' head(w)
 #' sum(w != 0)
@@ -74,63 +68,50 @@ FTRL = R6::R6Class(
   classname = "estimator",
   public = list(
     #-----------------------------------------------------------------
-    initialize = function(alpha = 0.1,
-                          beta = 0.5,
-                          lambda = 0,
-                          l1_ratio = 1,
-                          dropout = 0,
-                          n_features = 0) {
+    initialize = function(alpha = 0.1, beta = 0.5,
+                          lambda = 0, l1_ratio = 1,
+                          dropout = 0) {
 
       stopifnot(abs(dropout) < 1)
       stopifnot(l1_ratio <= 1 && l1_ratio >= 0)
       stopifnot(lambda >= 0 && alpha > 0 && beta > 0)
 
-      z = NULL
-      n = NULL
-
-      private$n_features = n_features
-      private$z = init_ftrl_param(z, n_features)
-      private$n = init_ftrl_param(n, n_features)
-
-      private$alpha = alpha
-      private$beta  = beta
-
-      private$lambda = lambda
-      private$l1_ratio = l1_ratio
-
-      private$model_ptr = create_ftrl_model(private$z,
-                                            private$n,
-                                            alpha = alpha,
-                                            beta = beta,
-                                            lambda1 = lambda * l1_ratio,
-                                            lambda2 = lambda * (1 - l1_ratio),
-                                            dropout = dropout,
-                                            n_features = n_features)
+      private$init_model_param(alpha = alpha, beta = beta,
+                 lambda = lambda, l1_ratio = l1_ratio,
+                 dropout = dropout)
     },
     #-----------------------------------------------------------------
     partial_fit = function(X, y, nthread = 0, ...) {
-
-      stopifnot(private$n_features >= 0)
-      stopifnot(inherits(X, "sparseMatrix"))
+      # we can enforce to work only with sparse matrices:
+      # stopifnot(inherits(X, "sparseMatrix"))
       if(!inherits(class(X), private$internal_matrix_format)) {
         # message(Sys.time(), " casting input matrix (class ", class(X), ") to ", private$internal_matrix_format)
         X = as(X, private$internal_matrix_format)
       }
-      stopifnot(ncol(X) == private$n_features)
-
+      X_ncol = ncol(X)
+      # init model during first first fit
+      # if(is.null(private$is_initialized)) {
+      if(!private$is_initialized) {
+        private$init_model_state(n_features = X_ncol,
+                                 z = numeric(X_ncol),
+                                 n = numeric(X_ncol))
+      }
+      # on consequent updates check that we are wotking with input matrix with same numner of features
+      stopifnot(X_ncol == private$n_features)
+      # check number of samples = number of outcomes
       stopifnot(nrow(X) == length(y))
-      if(any(is.na(X)))
+      # check no NA - anyNA() is by far fastest solution
+      if(anyNA(X@x))
         stop("NA's in input matrix are not allowed")
 
       # NOTE THAT private$z and private$n will be updated in place during the call !!!
-      p = ftrl_partial_fit(m = X, y = y, ptr = private$model_ptr, do_update = TRUE, nthread = nthread)
+      p = ftrl_partial_fit(m = X, y = y, R_model = private$model, do_update = TRUE, nthread = nthread)
       invisible(p)
     },
     #-----------------------------------------------------------------
-    predict = function(X, ...) {
-
-      stopifnot(private$n_features >= 0)
-      stopifnot(inherits(X, "sparseMatrix"))
+    predict = function(X, nthread = 0, ...) {
+      stopifnot(private$is_initialized)
+      # stopifnot(inherits(X, "sparseMatrix"))
       if(!inherits(class(X), private$internal_matrix_format)) {
         # message(Sys.time(), " casting input matrix (class ", class(X), ") to ", private$internal_matrix_format)
         X = as(X, private$internal_matrix_format)
@@ -139,19 +120,18 @@ FTRL = R6::R6Class(
 
       if(any(is.na(X)))
         stop("NA's in input matrix are not allowed")
-      p = ftrl_partial_fit(m = X, y = numeric(0), ptr = private$model_ptr, do_update = FALSE)
+
+      p = ftrl_partial_fit(m = X, y = numeric(0), R_model = private$model, do_update = FALSE, nthread = nthread)
       return(p);
     },
     #-----------------------------------------------------------------
     coef = function() {
-      get_ftrl_weights(private$model_ptr)
+      get_ftrl_weights(private$model)
     },
     #-----------------------------------------------------------------
     dump = function() {
-      model_dump = list(alpha = private$alpha, beta = private$beta,
-                        lambda = private$lambda, l1_ratio = private$l1_ratio,
-                        z = private$z, n = private$n,
-                        n_features = private$n_features)
+      # copy because we modify model in place
+      model_dump = data.table::copy(private$model)
       class(model_dump) = "ftrl_model_dump"
       model_dump
     },
@@ -159,23 +139,55 @@ FTRL = R6::R6Class(
     load = function(x) {
       if(class(x) != "ftrl_model_dump")
         stop("input should be class of 'ftrl_model_dump' -  list of model parameters")
-      self$initialize(alpha = x$alpha, beta = x$beta,
-                      lambda = x$lambda, l1_ratio = x$l1_ratio,
-                      n_features = x$n_features,
-                      z = x$z, n = x$n)
+      private$init_model_param(alpha = x$alpha, beta = x$beta,
+                               lambda = x$lambda, l1_ratio = x$l1_ratio,
+                               dropout = x$dropout)
+      private$init_model_state(n_features = x$n_features,
+                               z = data.table::copy(x$z),
+                               n = data.table::copy(x$n))
     }
     #-----------------------------------------------------------------
   ),
   private = list(
     internal_matrix_format = "RsparseMatrix",
-    z = NULL,
-    n = NULL,
-    alpha = NULL,
-    beta = NULL,
-    lambda = NULL,
-    l1_ratio = NULL,
-    n_features = NULL,
-    model_ptr = NULL
+    # model parameters object
+    model = list(
+      alpha = NULL,
+      beta = NULL,
+      lambda = NULL,
+      l1_ratio = NULL,
+      dropout = NULL,
+      n_features = NULL,
+      z = NULL,
+      n = NULL
+    ),
+    # whether we already called `partial_fit`
+    # in this case we fix `n_features`
+    is_initialized = FALSE,
+    # function to init model
+    init_model_param = function(alpha = 0.1, beta = 0.5,
+                          lambda = 0, l1_ratio = 1,
+                          dropout = 0) {
+      private$model$alpha = alpha
+      private$model$beta = beta
+      private$model$lambda = lambda
+      private$model$l1_ratio = l1_ratio
+      private$model$dropout = dropout
+    },
+
+    init_model_state = function(n_features = NULL, z = NULL, n = NULL) {
+      # if(!is.null(private$is_initialized))
+      if(private$is_initialized)
+        stop("model already initialized!")
+
+      private$is_initialized = TRUE
+
+      if(!is.null(n_features)) private$model$n_features = n_features
+      # enforce copy
+      # done because z & n will be updated in place
+      if(!is.null(z)) private$model$z = z
+      if(!is.null(n)) private$model$n = n
+    }
   )
 )
 

@@ -21,8 +21,8 @@ Creates 'Follow the Regularized Leader' model. Only logistic regression implemen
 For usage details see \bold{Methods, Arguments and Examples} sections.
 \preformatted{
 ftrl = FTRL$new(alpha = 0.1, beta = 0.5, lambda = 0, l1_ratio = 1, dropout = 0)
-ftrl$partial_fit(X, y)
-ftrl$predict(X)
+ftrl$partial_fit(X, y, nthread  = 0, ...)
+ftrl$predict(X, nthread  = 0, ...)
 ftrl$coef()
 }
 }
@@ -30,11 +30,11 @@ ftrl$coef()
 \section{Methods}{
 
 \describe{
-  \item{\code{$new(alpha = 0.1, beta = 0.5, lambda = 0, l1_ratio = 1, dropout = 0)}}{Constructor
+  \item{\code{FTRL$new(alpha = 0.1, beta = 0.5, lambda = 0, l1_ratio = 1, dropout = 0)}}{Constructor
   for FTRL model. For description of arguments see \bold{Arguments} section.}
-  \item{\code{$partial_fit(X, y, ...)}}{fits/updates model given input matrix \code{X} and target vector \code{y}.
+  \item{\code{$partial_fit(X, y, nthread  = 0, ...)}}{fits/updates model given input matrix \code{X} and target vector \code{y}.
   \code{X} shape = (n_samples, n_features)}
-  \item{\code{$predict(X, ...)}}{predicts output \code{X}}
+  \item{\code{$predict(X, nthread  = 0, ...)}}{predicts output \code{X}}
   \item{\code{$coef()}}{ return coefficients of the regression model}
   \item{\code{$dump()}}{create dump of the model (actually \code{list} with current model parameters)}
   \item{\code{$load(x)}}{load/initialize model from dump)}
@@ -58,8 +58,8 @@ ftrl$coef()
 }
 }
 \examples{
-library(Matrix)
 library(FTRL)
+library(Matrix)
 i = sample(1000, 1000 * 100, TRUE)
 j = sample(1000, 1000 * 100, TRUE)
 y = sample(c(0, 1), 1000, TRUE)
@@ -68,8 +68,10 @@ odd = seq(1, 99, 2)
 x[i \%in\% which(y == 1) & j \%in\% odd] = 1
 m = sparseMatrix(i = i, j = j, x = x, dims = c(1000, 1000), giveCsparse = FALSE)
 X = as(m, "RsparseMatrix")
-ftrl = FTRL$new(alpha = 0.01, beta = 0.1, lambda = 10, l1_ratio = 1, dropout = 0, n_features = ncol(m))
+
+ftrl = FTRL$new(alpha = 0.01, beta = 0.1, lambda = 10, l1_ratio = 1, dropout = 0)
 ftrl$partial_fit(X, y, nthread = 8)
+
 w = ftrl$coef()
 head(w)
 sum(w != 0)

@@ -5,15 +5,11 @@ omp_thread_count <- function() {
     .Call('FTRL_omp_thread_count', PACKAGE = 'FTRL')
 }
 
-create_ftrl_model <- function(z_inp, n_inp, alpha, beta, lambda1, lambda2, dropout, n_features) {
-    .Call('FTRL_create_ftrl_model', PACKAGE = 'FTRL', z_inp, n_inp, alpha, beta, lambda1, lambda2, dropout, n_features)
+get_ftrl_weights <- function(R_model) {
+    .Call('FTRL_get_ftrl_weights', PACKAGE = 'FTRL', R_model)
 }
 
-get_ftrl_weights <- function(ptr) {
-    .Call('FTRL_get_ftrl_weights', PACKAGE = 'FTRL', ptr)
-}
-
-ftrl_partial_fit <- function(m, y, ptr, do_update = 1L, nthread = 0L) {
-    .Call('FTRL_ftrl_partial_fit', PACKAGE = 'FTRL', m, y, ptr, do_update, nthread)
+ftrl_partial_fit <- function(m, y, R_model, do_update = 1L, nthread = 0L) {
+    .Call('FTRL_ftrl_partial_fit', PACKAGE = 'FTRL', m, y, R_model, do_update, nthread)
 }
 
