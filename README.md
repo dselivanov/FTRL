@@ -24,18 +24,29 @@ R package which implements [Follow-the-Regularized-Leader](http://www.jmlr.org/p
 ```r
 library(Matrix)
 library(FTRL)
-i = sample(1000, 1000 * 100, TRUE)
-j = sample(1000, 1000 * 100, TRUE)
-y = sample(c(0, 1), 1000, TRUE)
-x = sample(c(-1, 1), 1000 * 100, TRUE)
+N_SMPL = 5e3
+N_FEAT = 1e3
+NNZ = N_SMPL * 30
+
+set.seed(1)
+i = sample(N_SMPL, NNZ, TRUE)
+j = sample(N_FEAT, NNZ, TRUE)
+y = sample(c(0, 1), N_SMPL, TRUE)
+x = sample(c(-1, 1), NNZ, TRUE)
 odd = seq(1, 99, 2)
 x[i %in% which(y == 1) & j %in% odd] = 1
-m = sparseMatrix(i = i, j = j, x = x, dims = c(1000, 1000), giveCsparse = FALSE)
+m = sparseMatrix(i = i, j = j, x = x, dims = c(N_SMPL, N_FEAT), giveCsparse = FALSE)
 X = as(m, "RsparseMatrix")
-ftrl = FTRL$new(alpha = 0.01, beta = 0.1, lambda = 10, l1_ratio = 1, dropout = 0, n_features = ncol(m))
-ftrl$partial_fit(X, y, nthread = 8)
+
+ftrl = FTRL$new(alpha = 0.01, beta = 0.1, lambda = 20, l1_ratio = 1, dropout = 0)
+ftrl$partial_fit(X, y, nthread = 1)
+accuracy_1 = sum(ftrl$predict(X, nthread = 1) >= 0.5 & y) / length(y)
+
 w = ftrl$coef()
-head(w)
-sum(w != 0)
-p = ftrl$predict(m)
+
+
+ftrl$partial_fit(X, y, nthread = 1)
+accuracy_2 = sum(ftrl$predict(X, nthread = 1) >= 0.5 & y) / length(y)
+
+accuracy_2 > accuracy_1
 ```

@@ -97,7 +97,7 @@ FTRL = R6::R6Class(
                                  n = numeric(X_ncol))
       }
       # on consequent updates check that we are wotking with input matrix with same numner of features
-      stopifnot(X_ncol == private$n_features)
+      stopifnot(X_ncol == private$model$n_features)
       # check number of samples = number of outcomes
       stopifnot(nrow(X) == length(y))
       # check no NA - anyNA() is by far fastest solution
@@ -116,7 +116,7 @@ FTRL = R6::R6Class(
         # message(Sys.time(), " casting input matrix (class ", class(X), ") to ", private$internal_matrix_format)
         X = as(X, private$internal_matrix_format)
       }
-      stopifnot(ncol(X) == private$n_features)
+      stopifnot(ncol(X) == private$model$n_features)
 
       if(any(is.na(X)))
         stop("NA's in input matrix are not allowed")
@@ -183,8 +183,6 @@ FTRL = R6::R6Class(
       private$is_initialized = TRUE
 
       if(!is.null(n_features)) private$model$n_features = n_features
-      # enforce copy
-      # done because z & n will be updated in place
       if(!is.null(z)) private$model$z = z
       if(!is.null(n)) private$model$n = n
     }

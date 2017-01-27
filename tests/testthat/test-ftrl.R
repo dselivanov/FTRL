@@ -51,3 +51,14 @@ test_that("FTRL incremental fit", {
   accuracy_2 = sum(ftrl$predict(X, nthread = 1) >= 0.5 & y) / length(y)
   expect_gt(accuracy_2, accuracy_1)
 })
+
+test_that("FTRL check dimesnions", {
+  ftrl = FTRL$new(alpha = 0.1, beta = 0.1, lambda = 0.001, l1_ratio = 1, dropout = 0)
+  ftrl$partial_fit(X, y, nthread = 1)
+  # partial_fit of the model wich initialized with another number of features
+  expect_error(ftrl$partial_fit(X[, -1], y, nthread = 1))
+  expect_error(ftrl$partial_fit(cbind(X, rep(1, nrow(X))), y, nthread = 1))
+  # predict of the model wich initialized with another number of features
+  expect_error(ftrl$predict(X[, -1], nthread = 1))
+  expect_error(ftrl$predict(cbind(X, rep(1, nrow(X))), nthread = 1))
+})
