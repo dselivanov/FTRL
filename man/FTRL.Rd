@@ -20,7 +20,7 @@ Creates 'Follow the Regularized Leader' model. Only logistic regression implemen
 
 For usage details see \bold{Methods, Arguments and Examples} sections.
 \preformatted{
-ftrl = FTRL$new(alpha = 0.1, beta = 0.5, lambda = 0, l1_ratio = 1, dropout = 0)
+ftrl = FTRL$new(alpha = 0.1, beta = 0.5, lambda = 0, l1_ratio = 1, dropout = 0, family = "binomial")
 ftrl$partial_fit(X, y, nthread  = 0, ...)
 ftrl$predict(X, nthread  = 0, ...)
 ftrl$coef()
@@ -30,7 +30,7 @@ ftrl$coef()
 \section{Methods}{
 
 \describe{
-  \item{\code{FTRL$new(alpha = 0.1, beta = 0.5, lambda = 0, l1_ratio = 1, dropout = 0)}}{Constructor
+  \item{\code{FTRL$new(alpha = 0.1, beta = 0.5, lambda = 0, l1_ratio = 1, dropout = 0, family = "binomial")}}{Constructor
   for FTRL model. For description of arguments see \bold{Arguments} section.}
   \item{\code{$partial_fit(X, y, nthread  = 0, ...)}}{fits/updates model given input matrix \code{X} and target vector \code{y}.
   \code{X} shape = (n_samples, n_features)}
@@ -55,6 +55,7 @@ ftrl$coef()
  \item{l1_ratio}{controls L1 vs L2 penalty mixing. 1 = Lasso regression, 0 = Ridge regression. Elastic net is in between.}
  \item{dropout}{dropout - percentage of random features to exclude from each sample. Kind of regularization.}
  \item{n_features}{number of features in model (number of columns in expected model matrix) }
+ \item{family}{family of generalized linear model to solve. Only \code{binomial} (or logistic regression) supported at the moment.}
 }
 }
 \examples{

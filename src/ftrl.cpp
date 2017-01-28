@@ -1,5 +1,7 @@
 #include <Rcpp.h>
 #include <cmath>
+#include <stdexcept>
+
 using namespace Rcpp;
 
 #ifdef _OPENMP
@@ -21,10 +23,6 @@ int omp_thread_count() {
   return n;
 }
 
-inline double sigmoid(double x) {
-  return(1 / (1 + exp(-x)));
-}
-
 inline double sign(double x) {
   if (x > 0) return 1.0;
   if (x < 0) return -1.0;
@@ -35,10 +33,10 @@ class FTRLModel {
 public:
   FTRLModel(NumericVector z_inp, NumericVector n_inp, double alpha, double beta,
              double lambda, double l1_ratio, int n_features,
-             double dropout, double clip_grad = 1000):
+             double dropout, int family, double clip_grad = 1000):
   alpha(alpha), beta(beta),
   lambda1(lambda * l1_ratio), lambda2(lambda * (1.0 - l1_ratio)),
-  n_features(n_features), dropout(dropout), clip_grad(clip_grad) {
+  n_features(n_features), dropout(dropout), family(family), clip_grad(clip_grad) {
     z = z_inp.begin();
     n = n_inp.begin();
   }
@@ -50,7 +48,22 @@ public:
   double lambda2;
   int n_features;
   double dropout;
+  int family;
   double clip_grad;
+  double link_function(double x) const {
+    // binomial
+    if(this->family == 1)
+      return( 1 / (1 + exp(-x)) );
+    // gaussian
+    if(this->family == 2)
+      return( x );
+    // poisson
+    if(this->family == 3)
+      return( exp(x) );
+
+    throw std::invalid_argument( "this should now happen - wrong 'family' encoding "  );
+    return(-1);
+  };
 };
 
 //calculates regression weights for whole model
@@ -58,7 +71,7 @@ public:
 NumericVector get_ftrl_weights(const List &R_model) {
   FTRLModel model(R_model["z"] , R_model["n"] , R_model["alpha"], R_model["beta"],
                   R_model["lambda"], R_model["l1_ratio"], R_model["n_features"],
-                  R_model["dropout"]);
+                  R_model["dropout"], R_model["family_code"]);
   NumericVector res(model.n_features);
   for (int j = 0; j < model.n_features; j++) {
     double z_j = model.z[j];
@@ -91,7 +104,7 @@ double predict_one(const std::vector<int> &index, const std::vector<double> &x, 
   double prod = 0;
   for(int i = 0; i < index.size(); i++)
     prod += weights[i] * x[i];
-  double res = sigmoid(prod);
+  double res = model.link_function(prod);
   return(res);
 }
 
@@ -102,7 +115,7 @@ NumericVector ftrl_partial_fit(const S4 &m, const NumericVector &y, const List &
 
   FTRLModel model(R_model["z"] , R_model["n"] , R_model["alpha"], R_model["beta"],
                    R_model["lambda"], R_model["l1_ratio"], R_model["n_features"],
-                   R_model["dropout"]);
+                   R_model["dropout"], R_model["family_code"]);
 
   // set number of threads to all available
   int nth = omp_thread_count();

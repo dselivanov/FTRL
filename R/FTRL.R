@@ -11,7 +11,7 @@
 #' @section Usage:
 #' For usage details see \bold{Methods, Arguments and Examples} sections.
 #' \preformatted{
-#' ftrl = FTRL$new(alpha = 0.1, beta = 0.5, lambda = 0, l1_ratio = 1, dropout = 0)
+#' ftrl = FTRL$new(alpha = 0.1, beta = 0.5, lambda = 0, l1_ratio = 1, dropout = 0, family = "binomial")
 #' ftrl$partial_fit(X, y, nthread  = 0, ...)
 #' ftrl$predict(X, nthread  = 0, ...)
 #' ftrl$coef()
@@ -19,7 +19,7 @@
 #' @format \code{\link{R6Class}} object.
 #' @section Methods:
 #' \describe{
-#'   \item{\code{FTRL$new(alpha = 0.1, beta = 0.5, lambda = 0, l1_ratio = 1, dropout = 0)}}{Constructor
+#'   \item{\code{FTRL$new(alpha = 0.1, beta = 0.5, lambda = 0, l1_ratio = 1, dropout = 0, family = "binomial")}}{Constructor
 #'   for FTRL model. For description of arguments see \bold{Arguments} section.}
 #'   \item{\code{$partial_fit(X, y, nthread  = 0, ...)}}{fits/updates model given input matrix \code{X} and target vector \code{y}.
 #'   \code{X} shape = (n_samples, n_features)}
@@ -42,6 +42,7 @@
 #'  \item{l1_ratio}{controls L1 vs L2 penalty mixing. 1 = Lasso regression, 0 = Ridge regression. Elastic net is in between.}
 #'  \item{dropout}{dropout - percentage of random features to exclude from each sample. Kind of regularization.}
 #'  \item{n_features}{number of features in model (number of columns in expected model matrix) }
+#'  \item{family}{family of generalized linear model to solve. Only \code{binomial} (or logistic regression) supported at the moment.}
 #' }
 #' @export
 #' @examples
@@ -70,15 +71,15 @@ FTRL = R6::R6Class(
     #-----------------------------------------------------------------
     initialize = function(alpha = 0.1, beta = 0.5,
                           lambda = 0, l1_ratio = 1,
-                          dropout = 0) {
+                          dropout = 0, family = c("binomial")) {
 
       stopifnot(abs(dropout) < 1)
       stopifnot(l1_ratio <= 1 && l1_ratio >= 0)
       stopifnot(lambda >= 0 && alpha > 0 && beta > 0)
-
+      family = match.arg(family);
       private$init_model_param(alpha = alpha, beta = beta,
                  lambda = lambda, l1_ratio = l1_ratio,
-                 dropout = dropout)
+                 dropout = dropout, family = family)
     },
     #-----------------------------------------------------------------
     partial_fit = function(X, y, nthread = 0, ...) {
@@ -141,7 +142,7 @@ FTRL = R6::R6Class(
         stop("input should be class of 'ftrl_model_dump' -  list of model parameters")
       private$init_model_param(alpha = x$alpha, beta = x$beta,
                                lambda = x$lambda, l1_ratio = x$l1_ratio,
-                               dropout = x$dropout)
+                               dropout = x$dropout, family = x$family)
       private$init_model_state(n_features = x$n_features,
                                z = data.table::copy(x$z),
                                n = data.table::copy(x$n))
@@ -158,6 +159,8 @@ FTRL = R6::R6Class(
       l1_ratio = NULL,
       dropout = NULL,
       n_features = NULL,
+      family = NULL,
+      family_code = NULL,
       z = NULL,
       n = NULL
     ),
@@ -167,12 +170,22 @@ FTRL = R6::R6Class(
     # function to init model
     init_model_param = function(alpha = 0.1, beta = 0.5,
                           lambda = 0, l1_ratio = 1,
-                          dropout = 0) {
+                          dropout = 0, family = c("binomial")) {
+      family = match.arg(family)
+
       private$model$alpha = alpha
       private$model$beta = beta
       private$model$lambda = lambda
       private$model$l1_ratio = l1_ratio
       private$model$dropout = dropout
+      private$model$family = family
+      private$model$family_code =
+        switch(family,
+               "binomial" = 1,
+               "gaussian" = 2,
+               "poisson" = 3,
+               stop(sprintf("don't know how to work with family = '%s'", family))
+               )
     },
 
     init_model_state = function(n_features = NULL, z = NULL, n = NULL) {
@@ -188,111 +201,3 @@ FTRL = R6::R6Class(
     }
   )
 )
-
-
-# Reference R implementation
-# quite optimized, only 7-15x slower
-FTRL_R = function(alpha, beta, lambda1, lambda2, nfeature, z = NULL, n = NULL) {
-  z = init_ftrl_param(z, n_features)
-  n = init_ftrl_param(n, n_features)
-  alpha = alpha
-  beta = beta
-  lambda1 = lambda1
-  lambda2 = lambda2
-  ##########################################################################################
-  sigmoid = function(x) {
-    1 / (1 + exp(-x))
-  }
-  ##########################################################################################
-  w_ftprl = function(i) {
-    retval = numeric(length(i))
-    # index = which(abs(z[i]) > lambda1)
-    index = abs(z[i]) > lambda1
-    j = i[index]
-    z_j = z[j]
-    n_j = n[j]
-    retval[index] = - (z_j - sign(z_j) * lambda1) / (lambda2 + (beta + sqrt(n_j)) / alpha)
-    retval
-  }
-  ##########################################################################################
-  predict_internal = function(j, x) {
-    w = w_ftprl(j)
-    # print(w)
-    sigmoid(crossprod(x, w)[[1L]])
-  }
-  ##########################################################################################
-
-  partial_fit = function(x, y, with_pb = interactive()) {#x_cv = NULL, y_cv = NULL, check_each_n = 1e5, j = 1:1e5 ) {
-
-    # cv_train_n = length(j)
-    # x_cv_train = x[, j]
-    p = numeric(ncol(x))
-    if (with_pb)
-      pb = txtProgressBar(max = ncol(x), style = 3)
-
-    for(col in seq_len(ncol(x))) {
-      # if(col %% 1e4 == 0) {
-      # message(paste(Sys.time(), "sample", col))
-      # }
-      index =
-        if (x@p[[col]] == x@p[[col + 1L]]) integer(0)
-      else seq.int(x@p[[col]], x@p[[col + 1L]] - 1L, by = 1L)
-
-      i = x@i[index + 1L] + 1L
-      xx = x@x[index + 1L]
-
-      p[[col]] = predict_internal(i, xx)
-      # if(col %% check_each_n == 0)
-      # message(p[[col]])
-      n_i = n[i]
-      z_i = z[i]
-
-      g = (p[[col]] - y[[col]]) * xx
-      n_i_g2 = n_i + g * g
-      s = (sqrt(n_i_g2) - sqrt(n_i)) / alpha
-
-      z[i] <<- z_i + g - s * w_ftprl(i)
-      n[i] <<- n_i_g2
-      # print(z)
-      # if(col %% check_each_n == 0 && !is.null(x_cv)) {
-      #   if(!is.null(x_cv) && !is.null(y_cv)) {
-      #     cv_score = round(glmnet::auc(y = y_cv, prob = predict(x_cv, FALSE)), 4)
-      #     train_score = round(glmnet::auc(y = y[j], prob = predict(x_cv_train, FALSE)), 4)
-      #     message(Sys.time(), " ", col, " - ", "cv = ", cv_score, " train = ", train_score)
-      #   }
-      # }
-
-      if (with_pb)
-        setTxtProgressBar(pb, col)
-    }
-    if (with_pb)
-      close(pb)
-    list(p = p, z = z, n = n)
-  }
-  predict = function(x, with_pb = interactive(), check = 10) {
-    p = numeric(ncol(x))
-
-    if (with_pb)
-      pb = txtProgressBar(max = ncol(x), style = 3)
-
-    for(col in seq_len(ncol(x))) {
-      index =
-        if (x@p[[col]] == x@p[[col + 1L]])
-          integer(0)
-      else
-        seq.int(x@p[[col]], x@p[[col + 1L]] - 1L, by = 1L)
-
-      i = x@i[index + 1L] + 1L
-      xx = x@x[index + 1L]
-      p[[col]] = predict_internal(i, xx)
-      # if(col %% check == 0)
-      #   message(p[[col]])
-      if (with_pb)
-        setTxtProgressBar(pb, col)
-    }
-    if (with_pb)
-      close(pb)
-    p
-  }
-  list(predict = predict, partial_fit = partial_fit)
-}
