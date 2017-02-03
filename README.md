@@ -1,12 +1,13 @@
 ## What is this?
 
-R package which implements [Follow-the-Regularized-Leader](http://www.jmlr.org/proceedings/papers/v15/mcmahan11b/mcmahan11b.pdf) algorithm. It allows to solve very large problems with stochastic gradient descend online learning.
+R package which implements [Follow the proximally-regularized leader](http://www.jmlr.org/proceedings/papers/v15/mcmahan11b/mcmahan11b.pdf) algorithm. It allows to solve very large problems with stochastic gradient descend online learning. See [Ad Click Prediction: a View from the Trenches](https://www.eecs.tufts.edu/~dsculley/papers/ad-click-prediction.pdf) for example.
+![ftrl_algo](docs/FTRL_algo.png)
 
 ## Features
 
-- Online learning - can easily learn model in online fashion. (like vowpal wabbit)
-- Very fast - written in `Rcpp`
-- Parallel, asyncronous. Benefit from multicore systems (if your compiler supports openmp) - asynchronous [Hogwild!](https://arxiv.org/abs/1106.5730) style updates under the hood
+- Online learning - can easily learn model in online fashion
+- Fast (I would say very fast) - written in `Rcpp`
+- Parallel, asyncronous. Benefit from multicore systems (if your compiler supports openmp) - [Hogwild!](https://arxiv.org/abs/1106.5730) style updates under the hood
 
 ## Notes
 
@@ -15,9 +16,9 @@ R package which implements [Follow-the-Regularized-Leader](http://www.jmlr.org/p
 
 ## Todo list
 
-- gaussian family
+- gaussian, poisson family
 - vignette
-- test coverage (but package battle tested on [kaggle outbrain competition](https://www.kaggle.com/c/outbrain-click-prediction) and contribute to our 13 place)
+- improve test coverage (but package battle tested on [kaggle outbrain competition](https://www.kaggle.com/c/outbrain-click-prediction) and contribute to our 13 place)
 
 ## Quick reference
 
