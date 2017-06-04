@@ -9,7 +9,7 @@ get_ftrl_weights <- function(R_model) {
     .Call('FTRL_get_ftrl_weights', PACKAGE = 'FTRL', R_model)
 }
 
-ftrl_partial_fit <- function(m, y, R_model, do_update = 1L, nthread = 0L) {
-    .Call('FTRL_ftrl_partial_fit', PACKAGE = 'FTRL', m, y, R_model, do_update, nthread)
+ftrl_partial_fit <- function(m, y, R_model, weights, do_update = 1L, n_threads = 0L) {
+    .Call('FTRL_ftrl_partial_fit', PACKAGE = 'FTRL', m, y, R_model, weights, do_update, n_threads)
 }
 

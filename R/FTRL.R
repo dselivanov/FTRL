@@ -12,8 +12,8 @@
 #' For usage details see \bold{Methods, Arguments and Examples} sections.
 #' \preformatted{
 #' ftrl = FTRL$new(alpha = 0.1, beta = 0.5, lambda = 0, l1_ratio = 1, dropout = 0, family = "binomial")
-#' ftrl$partial_fit(X, y, nthread  = 0, ...)
-#' ftrl$predict(X, nthread  = 0, ...)
+#' ftrl$partial_fit(X, y, n_threads  = 0, ...)
+#' ftrl$predict(X, n_threads  = 0, ...)
 #' ftrl$coef()
 #' }
 #' @format \code{\link{R6Class}} object.
@@ -21,9 +21,9 @@
 #' \describe{
 #'   \item{\code{FTRL$new(alpha = 0.1, beta = 0.5, lambda = 0, l1_ratio = 1, dropout = 0, family = "binomial")}}{Constructor
 #'   for FTRL model. For description of arguments see \bold{Arguments} section.}
-#'   \item{\code{$partial_fit(X, y, nthread  = 0, ...)}}{fits/updates model given input matrix \code{X} and target vector \code{y}.
+#'   \item{\code{$partial_fit(X, y, n_threads  = 0, ...)}}{fits/updates model given input matrix \code{X} and target vector \code{y}.
 #'   \code{X} shape = (n_samples, n_features)}
-#'   \item{\code{$predict(X, nthread  = 0, ...)}}{predicts output \code{X}}
+#'   \item{\code{$predict(X, n_threads  = 0, ...)}}{predicts output \code{X}}
 #'   \item{\code{$coef()}}{ return coefficients of the regression model}
 #'   \item{\code{$dump()}}{create dump of the model (actually \code{list} with current model parameters)}
 #'   \item{\code{$load(x)}}{load/initialize model from dump)}
@@ -58,7 +58,7 @@
 #' X = as(m, "RsparseMatrix")
 #'
 #' ftrl = FTRL$new(alpha = 0.01, beta = 0.1, lambda = 10, l1_ratio = 1, dropout = 0)
-#' ftrl$partial_fit(X, y, nthread = 8)
+#' ftrl$partial_fit(X, y, n_threads = 8)
 #'
 #' w = ftrl$coef()
 #' head(w)
@@ -82,7 +82,7 @@ FTRL = R6::R6Class(
                  dropout = dropout, family = family)
     },
     #-----------------------------------------------------------------
-    partial_fit = function(X, y, nthread = 0, ...) {
+    partial_fit = function(X, y, n_threads = 0, weights = rep(1, nrow(X)), ...) {
       # we can enforce to work only with sparse matrices:
       # stopifnot(inherits(X, "sparseMatrix"))
       if(!inherits(class(X), private$internal_matrix_format)) {
@@ -106,11 +106,12 @@ FTRL = R6::R6Class(
         stop("NA's in input matrix are not allowed")
 
       # NOTE THAT private$z and private$n will be updated in place during the call !!!
-      p = ftrl_partial_fit(m = X, y = y, R_model = private$model, do_update = TRUE, nthread = nthread)
+      p = ftrl_partial_fit(m = X, y = y, R_model = private$model, weights = weights,
+                           do_update = TRUE, n_threads = n_threads)
       invisible(p)
     },
     #-----------------------------------------------------------------
-    predict = function(X, nthread = 0, ...) {
+    predict = function(X, n_threads = 0, ...) {
       stopifnot(private$is_initialized)
       # stopifnot(inherits(X, "sparseMatrix"))
       if(!inherits(class(X), private$internal_matrix_format)) {
@@ -122,7 +123,9 @@ FTRL = R6::R6Class(
       if(any(is.na(X)))
         stop("NA's in input matrix are not allowed")
 
-      p = ftrl_partial_fit(m = X, y = numeric(0), R_model = private$model, do_update = FALSE, nthread = nthread)
+      p = ftrl_partial_fit(m = X, y = numeric(0), R_model = private$model,
+                           weights = rep(1, nrow(X)),
+                           do_update = FALSE, n_threads = n_threads)
       return(p);
     },
     #-----------------------------------------------------------------

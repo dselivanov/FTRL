@@ -16,13 +16,14 @@ Creates 'Follow the Regularized Leader' model. Only logistic regression implemen
 \describe{
 \item{\code{verbose}}{\code{logical = TRUE} whether to display training inforamtion}
 }}
+
 \section{Usage}{
 
 For usage details see \bold{Methods, Arguments and Examples} sections.
 \preformatted{
 ftrl = FTRL$new(alpha = 0.1, beta = 0.5, lambda = 0, l1_ratio = 1, dropout = 0, family = "binomial")
-ftrl$partial_fit(X, y, nthread  = 0, ...)
-ftrl$predict(X, nthread  = 0, ...)
+ftrl$partial_fit(X, y, n_threads  = 0, ...)
+ftrl$predict(X, n_threads  = 0, ...)
 ftrl$coef()
 }
 }
@@ -32,9 +33,9 @@ ftrl$coef()
 \describe{
   \item{\code{FTRL$new(alpha = 0.1, beta = 0.5, lambda = 0, l1_ratio = 1, dropout = 0, family = "binomial")}}{Constructor
   for FTRL model. For description of arguments see \bold{Arguments} section.}
-  \item{\code{$partial_fit(X, y, nthread  = 0, ...)}}{fits/updates model given input matrix \code{X} and target vector \code{y}.
+  \item{\code{$partial_fit(X, y, n_threads  = 0, ...)}}{fits/updates model given input matrix \code{X} and target vector \code{y}.
   \code{X} shape = (n_samples, n_features)}
-  \item{\code{$predict(X, nthread  = 0, ...)}}{predicts output \code{X}}
+  \item{\code{$predict(X, n_threads  = 0, ...)}}{predicts output \code{X}}
   \item{\code{$coef()}}{ return coefficients of the regression model}
   \item{\code{$dump()}}{create dump of the model (actually \code{list} with current model parameters)}
   \item{\code{$load(x)}}{load/initialize model from dump)}
@@ -58,6 +59,7 @@ ftrl$coef()
  \item{family}{family of generalized linear model to solve. Only \code{binomial} (or logistic regression) supported at the moment.}
 }
 }
+
 \examples{
 library(FTRL)
 library(Matrix)
@@ -71,7 +73,7 @@ m = sparseMatrix(i = i, j = j, x = x, dims = c(1000, 1000), giveCsparse = FALSE)
 X = as(m, "RsparseMatrix")
 
 ftrl = FTRL$new(alpha = 0.01, beta = 0.1, lambda = 10, l1_ratio = 1, dropout = 0)
-ftrl$partial_fit(X, y, nthread = 8)
+ftrl$partial_fit(X, y, n_threads = 8)
 
 w = ftrl$coef()
 head(w)
@@ -79,4 +81,3 @@ sum(w != 0)
 p = ftrl$predict(m)
 }
 \keyword{datasets}
-

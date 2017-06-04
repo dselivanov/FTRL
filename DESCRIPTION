@@ -1,7 +1,7 @@
 Package: FTRL
 Type: Package
 Title: FTRL proximal algorithm for large scale online lerning
-Version: 0.1.0
+Version: 0.1.1
 Author: Dmitriy Selivanov
 Maintainer: Dmitriy Selivanov <selivanov.dmitriy@gmail.com>
 Description: Fast C++ implementation of FTRL-proximal algorithm. Package can
@@ -17,4 +17,4 @@ Imports:
     Matrix (>= 1.1), 
     data.table (>= 1.10.0)
 LinkingTo: Rcpp
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

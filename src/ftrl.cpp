@@ -111,7 +111,8 @@ double predict_one(const std::vector<int> &index, const std::vector<double> &x, 
 
 // [[Rcpp::export]]
 NumericVector ftrl_partial_fit(const S4 &m, const NumericVector &y, const List &R_model,
-                               int do_update = 1, int nthread = 0) {
+                               const NumericVector &weights,
+                               int do_update = 1, int n_threads = 0) {
 
   FTRLModel model(R_model["z"] , R_model["n"] , R_model["alpha"], R_model["beta"],
                    R_model["lambda"], R_model["l1_ratio"], R_model["n_features"],
@@ -121,8 +122,11 @@ NumericVector ftrl_partial_fit(const S4 &m, const NumericVector &y, const List &
   int nth = omp_thread_count();
 
   // override if user manually specified number of threads
-  if(nthread > 0)
-    nth = nthread;
+  if(n_threads > 0)
+    nth = n_threads;
+
+  const double *y_ptr = y.begin();
+  const double *w_ptr = weights.begin();
 
   IntegerVector dims = m.slot("Dim");
   int N = dims[0];
@@ -167,7 +171,7 @@ NumericVector ftrl_partial_fit(const S4 &m, const NumericVector &y, const List &
     y_hat[i] = predict_one(example_index, example_value, model);
 
     if(do_update) {
-      double d = y_hat[i] - y[i];
+      double d = w_ptr[i] * (y_hat[i] - y_ptr[i]);
       double grad;
       double n_i_g2;
       double sigma;
