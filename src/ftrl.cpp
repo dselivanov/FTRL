@@ -146,7 +146,7 @@ NumericVector ftrl_partial_fit(const S4 &m, const NumericVector &y, const List &
   double *X = XX.begin();
 
   #ifdef _OPENMP
-  #pragma omp parallel for num_threads(nth)
+  #pragma omp parallel for num_threads(nth) schedule(guided, 1000)
   #endif
   for(int i = 0; i < N; i++) {
     size_t p1 = P[i];
