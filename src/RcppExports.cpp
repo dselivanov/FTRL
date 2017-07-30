@@ -7,7 +7,7 @@ using namespace Rcpp;
 
 // omp_thread_count
 int omp_thread_count();
-RcppExport SEXP FTRL_omp_thread_count() {
+RcppExport SEXP _FTRL_omp_thread_count() {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -17,7 +17,7 @@ END_RCPP
 }
 // get_ftrl_weights
 NumericVector get_ftrl_weights(const List& R_model);
-RcppExport SEXP FTRL_get_ftrl_weights(SEXP R_modelSEXP) {
+RcppExport SEXP _FTRL_get_ftrl_weights(SEXP R_modelSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -28,7 +28,7 @@ END_RCPP
 }
 // ftrl_partial_fit
 NumericVector ftrl_partial_fit(const S4& m, const NumericVector& y, const List& R_model, const NumericVector& weights, int do_update, int n_threads);
-RcppExport SEXP FTRL_ftrl_partial_fit(SEXP mSEXP, SEXP ySEXP, SEXP R_modelSEXP, SEXP weightsSEXP, SEXP do_updateSEXP, SEXP n_threadsSEXP) {
+RcppExport SEXP _FTRL_ftrl_partial_fit(SEXP mSEXP, SEXP ySEXP, SEXP R_modelSEXP, SEXP weightsSEXP, SEXP do_updateSEXP, SEXP n_threadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -44,9 +44,9 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"FTRL_omp_thread_count", (DL_FUNC) &FTRL_omp_thread_count, 0},
-    {"FTRL_get_ftrl_weights", (DL_FUNC) &FTRL_get_ftrl_weights, 1},
-    {"FTRL_ftrl_partial_fit", (DL_FUNC) &FTRL_ftrl_partial_fit, 6},
+    {"_FTRL_omp_thread_count", (DL_FUNC) &_FTRL_omp_thread_count, 0},
+    {"_FTRL_get_ftrl_weights", (DL_FUNC) &_FTRL_get_ftrl_weights, 1},
+    {"_FTRL_ftrl_partial_fit", (DL_FUNC) &_FTRL_ftrl_partial_fit, 6},
     {NULL, NULL, 0}
 };
 

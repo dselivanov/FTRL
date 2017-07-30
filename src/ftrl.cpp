@@ -1,12 +1,18 @@
 #include <Rcpp.h>
 #include <cmath>
 #include <stdexcept>
-
+#include <random>
 using namespace Rcpp;
 
 #ifdef _OPENMP
 #include <omp.h>
 #endif
+
+int intRand(const int & min, const int & max) {
+  static thread_local std::mt19937 generator;
+  std::uniform_int_distribution<int> distribution(min,max);
+  return distribution(generator);
+}
 
 // returns number of available threads
 // omp_get_num_threads() for some reason doesn't work on all systems
@@ -159,7 +165,7 @@ NumericVector ftrl_partial_fit(const S4 &m, const NumericVector &y, const List &
     // int k = 0;
     for(int pp = p1; pp < p2; pp++) {
       if(do_update) {
-        if(((double) rand() / (RAND_MAX)) > model.dropout) {
+        if(((double) intRand(0, RAND_MAX) / (RAND_MAX)) > model.dropout) {
           example_index.push_back(J[pp]);
           example_value.push_back(X[pp] / (1.0 - model.dropout));
         }

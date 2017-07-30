@@ -2,14 +2,14 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 omp_thread_count <- function() {
-    .Call('FTRL_omp_thread_count', PACKAGE = 'FTRL')
+    .Call('_FTRL_omp_thread_count', PACKAGE = 'FTRL')
 }
 
 get_ftrl_weights <- function(R_model) {
-    .Call('FTRL_get_ftrl_weights', PACKAGE = 'FTRL', R_model)
+    .Call('_FTRL_get_ftrl_weights', PACKAGE = 'FTRL', R_model)
 }
 
 ftrl_partial_fit <- function(m, y, R_model, weights, do_update = 1L, n_threads = 0L) {
-    .Call('FTRL_ftrl_partial_fit', PACKAGE = 'FTRL', m, y, R_model, weights, do_update, n_threads)
+    .Call('_FTRL_ftrl_partial_fit', PACKAGE = 'FTRL', m, y, R_model, weights, do_update, n_threads)
 }
 
