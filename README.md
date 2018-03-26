@@ -1,3 +1,5 @@
+# NOW PART OF [rsparse](https://github.com/dselivanov/rsparse)
+
 ## What is this?
 
 R package which implements [Follow the proximally-regularized leader](http://www.jmlr.org/proceedings/papers/v15/mcmahan11b/mcmahan11b.pdf) algorithm. It allows to solve very large problems with stochastic gradient descend online learning. See [Ad Click Prediction: a View from the Trenches](https://www.eecs.tufts.edu/~dsculley/papers/ad-click-prediction.pdf) for example.
